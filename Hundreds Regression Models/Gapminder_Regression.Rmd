@@ -1,0 +1,137 @@
+---
+title: "100s of Regression Models with 10 lines of R code"
+subtitle: "With purrr and gapminder package"
+author: "FRK"
+date: "6/17/2021"
+output: 
+  html_document:
+    theme: united
+    toc: TRUE
+    highlight: tango
+---
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+
+# Problem
+
+Today we are going to fit a simple regression model with yearly population to year, by each country of the world. The data is available on the *gapminder* package. And we will use *functional programming* to apply regression model to each country with an easy 10 lines of code.
+
+# Plot the data by Country and Continent
+
+```{r, fig.width = 10}
+require(tidyverse)
+require(gapminder)
+head(gapminder)
+
+gapminder %>% 
+  ggplot(aes(year, pop, color = country)) +
+  geom_line(show.legend = F) +
+  facet_wrap(~continent, scales = "free_y")
+
+```
+
+We can clearly see some difference within and between continents. There is also a linear pattern in increase of population with year. Lets fit the regression model and check which countries and continent have highest yearly population growth rate.
+
+
+# Fit the Regression models by each country
+
+We are going to use the *map* function from the *purrr* package to apply regression model to each country.
+
+```{r}
+require(broom)
+require(purrr)
+
+reg_models <- gapminder %>%  
+  group_by(country, continent) %>% 
+  nest() %>% 
+  mutate(models = map(data, ~lm(pop ~ year, data = .x))) %>% 
+  mutate(coefs = map(models, ~tidy(.x))) %>% 
+  unnest(coefs) 
+
+### FItted Models and Coefficients
+reg_models     
+   
+```
+
+# Plot the Estimated Growth Rate
+
+```{r, fig.width = 10}
+
+g1 <- reg_models %>% 
+  filter(term == "year") %>% 
+  arrange(estimate) %>% 
+  unnest(data) %>% 
+  group_by(country, continent, estimate) %>% 
+  nest() %>% 
+  ggplot(aes(x = reorder(country, estimate), y = estimate, fill = continent)) +
+  geom_col() + 
+  scale_y_log10() +
+  theme_light() +
+  theme(axis.text.x = element_text(size=3, angle = 90),
+        panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()) +
+  labs(title = "Estimated per year Population Growth Rate by Country",
+       x = "Country",
+       y = "Coefficient / Estimate on log_10 scale",
+       fill = "Continent")
+ 
+plotly::ggplotly(g1)
+        
+```
+
+Looks like Asia, Africa and South American countries have the highest population growth rates.
+
+# Digging Deep to what's happening with the code
+
+```{r}
+
+### First Group by Country and COntinent
+gapminder %>%  
+  group_by(country, continent)
+
+### The nest the data
+gapminder %>%  
+  group_by(country, continent) %>% 
+  nest() 
+
+### Apply Linear Regression to the column data
+### Inside the data, there are columns called pop and year
+### .x means take everything from each tibble of the data
+gapminder %>%  
+  group_by(country, continent) %>% 
+  nest() %>% 
+  mutate(models = map(data, ~lm(pop ~ year, data = .x)))
+
+### We created the model column
+### Now we tidy the model column
+### This created tibbles of coefficients foe each country
+gapminder %>%  
+  group_by(country, continent) %>% 
+  nest() %>% 
+  mutate(models = map(data, ~lm(pop ~ year, data = .x))) %>% 
+  mutate(coefs = map(models, ~tidy(.x)))
+
+### Finally unnest the coefs column to get our estimates
+gapminder %>%  
+  group_by(country, continent) %>% 
+  nest() %>% 
+  mutate(models = map(data, ~lm(pop ~ year, data = .x))) %>% 
+  mutate(coefs = map(models, ~tidy(.x))) %>% 
+  unnest(coefs) 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

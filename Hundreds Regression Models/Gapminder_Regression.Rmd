@@ -29,7 +29,8 @@ head(gapminder)
 gapminder %>% 
   ggplot(aes(year, pop, color = country)) +
   geom_line(show.legend = F) +
-  facet_wrap(~continent, scales = "free_y")
+  facet_wrap(~continent, scales = "free_y") +
+  scale_y_log10() # Took log to make the y axis readable
 
 ```
 
@@ -83,6 +84,28 @@ plotly::ggplotly(g1)
 ```
 
 Looks like Asia, Africa and South American countries have the highest population growth rates.
+
+# Pvalue Vs Estimate in log scale
+
+Taking log scale to make the plot readable.
+
+```{r, fig.width = 12, fig.height=12}
+require(ggrepel)
+reg_models %>% 
+  filter(term == "year") %>% 
+  ggplot(aes(x = estimate, y = p.value, color = continent)) +
+  geom_point(show.legend = F) +
+  geom_hline(yintercept = 0.05, linetype = "dashed", alpha = 0.5) +
+#  geom_vline(xintercept = 0.00001   , linetype = "dashed", alpha = 0.5) +
+  xlab("Coefficient Value") +
+  ylab("P-value in Log10 Scale") +
+  scale_y_log10() +
+  scale_x_log10() +
+  geom_label_repel(aes(label = country), size = 2.5, alpha = 0.5, show.legend = F, max.overlaps = 20) +
+  facet_wrap(~continent, scales = "free") +
+  theme_light()
+```
+
 
 # Digging Deep to what's happening with the code
 

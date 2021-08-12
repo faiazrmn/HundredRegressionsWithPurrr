@@ -39,7 +39,9 @@ We can clearly see some difference within and between continents. There is also 
 
 # Fit the Regression models by each country
 
-We are going to use the *map* function from the *purrr* package to apply regression model to each country.
+- We are going to use the *map* function from the *purrr* package to apply regression model to each country.
+- *tidy* makes model output tidy tibble
+- *glance* creates tibble of model's Goodness of Fit estimates
 
 ```{r}
 require(broom)
@@ -49,7 +51,8 @@ reg_models <- gapminder %>%
   group_by(country, continent) %>% 
   nest() %>% 
   mutate(models = map(data, ~lm(pop ~ year, data = .x))) %>% 
-  mutate(coefs = map(models, ~tidy(.x))) %>% 
+  mutate(coefs = map(models, ~tidy(.x)),
+         GOF = map(models, ~glance(.x))) %>% 
   unnest(coefs) 
 
 ### FItted Models and Coefficients
@@ -85,27 +88,50 @@ plotly::ggplotly(g1)
 
 Looks like Asia, Africa and South American countries have the highest population growth rates.
 
-# Pvalue Vs Estimate in log scale
+# Pvalue, Estimate, R-Squared in log scale
 
-Taking log scale to make the plot readable.
+- Taking log scale to make the plot readable.
+- Large Inverse-R-Squared states poor fit to linear model.
+- Point above horizontal line indicate Insignificant p-value for the estimate. That is estimate is not significantly greater then zero.
+- Larger coefficient value means higher population growth rate. Countries on right side have higher growth rate.
 
 ```{r, fig.width = 12, fig.height=12}
 require(ggrepel)
 reg_models %>% 
   filter(term == "year") %>% 
+  select(-std.error, -statistic, -p.value) %>% 
+  unnest(GOF) %>% 
+  mutate(`Inverse-R-Squared` =  1/ round(r.squared, 2)) %>% 
+  
   ggplot(aes(x = estimate, y = p.value, color = continent)) +
-  geom_point(show.legend = F) +
-  geom_hline(yintercept = 0.05, linetype = "dashed", alpha = 0.5) +
-#  geom_vline(xintercept = 0.00001   , linetype = "dashed", alpha = 0.5) +
-  xlab("Coefficient Value") +
-  ylab("P-value in Log10 Scale") +
+  geom_point(aes(size = `Inverse-R-Squared`)) +
+  
+  geom_hline(yintercept = 0.05, 
+             linetype = "longdash", 
+             alpha = 0.6) +
+  
+  labs(shape="Inverse R Squared", colour="Continents",
+       x = "Coefficient Value",
+       y = "P-value of Estimate in Log10 Scale" ) +
+  
   scale_y_log10() +
   scale_x_log10() +
-  geom_label_repel(aes(label = country), size = 2.5, alpha = 0.5, show.legend = F, max.overlaps = 20) +
-  facet_wrap(~continent, scales = "free") +
-  theme_light()
+  
+  geom_label_repel(aes(label = country), 
+                   size = 2.3, 
+                   alpha = 0.45, 
+                   show.legend = F, 
+                   max.overlaps = 20, 
+                   min.segment.length = unit(0, 'lines')) +
+  
+  facet_wrap(~continent, scales = "free")  +
+  theme_light() +
+  theme(legend.position = "bottom", 
+        legend.direction = "horizontal",  
+        legend.box = "vertical")
 ```
 
+***
 
 # Digging Deep to what's happening with the code
 
@@ -144,6 +170,15 @@ gapminder %>%
   mutate(models = map(data, ~lm(pop ~ year, data = .x))) %>% 
   mutate(coefs = map(models, ~tidy(.x))) %>% 
   unnest(coefs) 
+
+### ALso unnest the GOF column to get our GOF estimates
+gapminder %>%  
+  group_by(country, continent) %>% 
+  nest() %>% 
+  mutate(models = map(data, ~lm(pop ~ year, data = .x))) %>% 
+  mutate(coefs = map(models, ~tidy(.x)),
+         GOF = map(models, ~glance(.x))) %>% 
+  unnest(GOF) 
 ```
 
 

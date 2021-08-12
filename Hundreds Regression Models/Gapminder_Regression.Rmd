@@ -112,14 +112,16 @@ reg_models %>%
   
   labs(shape="Inverse R Squared", colour="Continents",
        x = "Coefficient Value",
-       y = "P-value of Estimate in Log10 Scale" ) +
+       y = "P-value of Estimate in Log10 Scale", 
+       title = "Coefficient, Pvalue of Coefficients, R-Squared",
+       caption = "Both Axis are free, so not directly comparable continent wise\nY axis on log scale, X axis is abosolute") +
   
   scale_y_log10() +
   scale_x_log10() +
   
-  geom_label_repel(aes(label = country), 
-                   size = 2.3, 
-                   alpha = 0.45, 
+  geom_text_repel(aes(label = country), 
+                   size = 2.2, 
+                   alpha = 0.5, 
                    show.legend = F, 
                    max.overlaps = 20, 
                    min.segment.length = unit(0, 'lines')) +

@@ -21,7 +21,7 @@ Today we are going to fit a simple regression model with yearly population to ye
 
 # Plot the data by Country and Continent
 
-```{r, fig.width = 10}
+```{r, fig.width = 10, fig.height=8}
 require(tidyverse)
 require(gapminder)
 head(gapminder)
@@ -29,9 +29,9 @@ head(gapminder)
 gapminder %>% 
   ggplot(aes(year, pop, color = country)) +
   geom_line(show.legend = F) +
-  facet_wrap(~continent, scales = "free_y") +
-  scale_y_log10() # Took log to make the y axis readable
-
+  facet_wrap(~continent) +
+  scale_y_log10() + # Took log to make the y axis readable
+  theme_light()
 ```
 
 We can clearly see some difference within and between continents. There is also a linear pattern in increase of population with year. Lets fit the regression model and check which countries and continent have highest yearly population growth rate.
@@ -89,8 +89,6 @@ plotly::ggplotly(g1)
 Looks like Asia, Africa and South American countries have the highest population growth rates.
 
 # Pvalue, Estimate, R-Squared in log scale
-
-
 
 ```{r, fig.width = 10, fig.height=10}
 require(ggrepel)
@@ -151,7 +149,7 @@ reg_models %>%
 gapminder %>%  
   group_by(country, continent)
 
-### The nest the data
+### Then nest the data
 gapminder %>%  
   group_by(country, continent) %>% 
   nest() 
@@ -166,7 +164,7 @@ gapminder %>%
 
 ### We created the model column
 ### Now we tidy the model column
-### This created tibbles of coefficients foe each country
+### This created tibbles of coefficients for each country
 gapminder %>%  
   group_by(country, continent) %>% 
   nest() %>% 

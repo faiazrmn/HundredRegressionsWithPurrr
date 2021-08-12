@@ -90,48 +90,56 @@ Looks like Asia, Africa and South American countries have the highest population
 
 # Pvalue, Estimate, R-Squared in log scale
 
-- Taking log scale to make the plot readable.
-- Large Inverse-R-Squared states poor fit to linear model.
-- Point above horizontal line indicate Insignificant p-value for the estimate. That is estimate is not significantly greater then zero.
-- Larger coefficient value means higher population growth rate. Countries on right side have higher growth rate.
 
-```{r, fig.width = 12, fig.height=12}
+
+```{r, fig.width = 10, fig.height=10}
 require(ggrepel)
 reg_models %>% 
   filter(term == "year") %>% 
-  select(-std.error, -statistic, -p.value) %>% 
+  select(-std.error, -statistic, -p.value) %>%  ### Overlaps with augment, so remove
   unnest(GOF) %>% 
   mutate(`Inverse-R-Squared` =  1/ round(r.squared, 2)) %>% 
   
   ggplot(aes(x = estimate, y = p.value, color = continent)) +
   geom_point(aes(size = `Inverse-R-Squared`)) +
   
+  guides(color = "none") + ### Hide Continents from Legend, But keep Size Legend
+  
   geom_hline(yintercept = 0.05, 
              linetype = "longdash", 
              alpha = 0.6) +
   
   labs(shape="Inverse R Squared", colour="Continents",
-       x = "Coefficient Value",
-       y = "P-value of Estimate in Log10 Scale", 
+       x = "Coefficient Value (Yearly Growth Rate)",
+       y = "P-value of Coefficient", 
        title = "Coefficient, Pvalue of Coefficients, R-Squared",
-       caption = "Both Axis are free, so not directly comparable continent wise\nY axis on log scale, X axis is abosolute") +
+       subtitle = "Continents sorted by Median Population Growth Rate",
+     caption = "Both Axis on log scale"
+  ) +
   
   scale_y_log10() +
   scale_x_log10() +
   
   geom_text_repel(aes(label = country), 
-                   size = 2.2, 
-                   alpha = 0.5, 
-                   show.legend = F, 
-                   max.overlaps = 20, 
-                   min.segment.length = unit(0, 'lines')) +
-  
-  facet_wrap(~continent, scales = "free")  +
+                  size = 2.2, 
+                  alpha = 0.5, 
+                  show.legend = F, 
+                  max.overlaps = 20, 
+                  force_pull = 0.7, max.time = 1,
+                  min.segment.length = unit(0, 'lines'),
+                    ) +
+  ### Sort continents by median coefficient
+  facet_wrap(~ fct_reorder(.f = as.factor(continent), .x = estimate, .fun = median))  + 
   theme_light() +
   theme(legend.position = "bottom", 
         legend.direction = "horizontal",  
-        legend.box = "vertical")
+        legend.box = "vertical") 
 ```
+
+- Taking log scale to make the plot readable.
+- Large Inverse-R-Squared states poor fit to linear model.
+- Point above horizontal line indicate Insignificant p-value for the estimate. That is estimate is not significantly greater then **zero**.
+- Larger coefficient value means higher population growth rate. Countries on right side have higher growth rate.
 
 ***
 
